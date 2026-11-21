@@ -1,0 +1,22 @@
+<header class="barra">
+  <a routerLink="/" class="logo">♻ ReUse Campus</a>
+  <nav>
+    <a routerLink="/">Publicaciones</a>
+    <a routerLink="/publicaciones/nueva">Publicar</a>
+  </nav>
+  <label class="usuario">
+    Usuario:
+    <select (change)="cambiarUsuario($any($event.target).value)">
+      @for (u of usuarios(); track u.id) {
+        <option [value]="u.id">{{ u.nombre }}</option>
+      }
+    </select>
+  </label>
+</header>
+
+<main>
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  <router-outlet />
+</main>
