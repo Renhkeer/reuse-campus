@@ -1,5 +1,5 @@
 const express = require('express');
-const { query } = require('../db');
+const { query, transaccion, errorHttp } = require('../db');
 
 const router = express.Router();
 
@@ -54,11 +54,22 @@ router.post('/', async (req, res) => {
   res.status(201).json(filas[0]);
 });
 
-// PUT /api/publicaciones/:id  { titulo, descripcion, categoria, modalidad }
+// Revisa que la publicación exista, que sea del usuario y que siga DISPONIBLE
+async function buscarPropia(id, usuarioId, tx) {
+  const filas = await query('SELECT * FROM publicaciones WHERE id = @id', { id: Number(id) }, tx);
+  if (filas.length === 0) throw errorHttp(404, 'Publicación no encontrada');
+  const p = filas[0];
+  if (p.usuarioId !== Number(usuarioId)) throw errorHttp(403, 'Solo el propietario puede modificar esta publicación');
+  if (p.estado !== 'DISPONIBLE') throw errorHttp(409, `No se puede modificar: la publicación está ${p.estado}`);
+  return p;
+}
+
+// PUT /api/publicaciones/:id  { titulo, descripcion, categoria, modalidad, usuarioId }
 // El estado no se cambia aquí: lo cambian las reglas de negocio
 router.put('/:id', async (req, res) => {
   const error = validar(req.body);
   if (error) return res.status(400).json({ mensaje: error });
+  await buscarPropia(req.params.id, req.body.usuarioId);
 
   const { titulo, descripcion, categoria, modalidad } = req.body;
   const filas = await query(
@@ -68,17 +79,20 @@ router.put('/:id', async (req, res) => {
      WHERE id = @id`,
     { id: Number(req.params.id), titulo, descripcion, categoria, modalidad }
   );
-  if (filas.length === 0) return res.status(404).json({ mensaje: 'Publicación no encontrada' });
   res.json(filas[0]);
 });
 
-// DELETE /api/publicaciones/:id -> no se borra (RN17), pasa a CANCELADA
+// DELETE /api/publicaciones/:id  { usuarioId }
+// No se borra (RN17): pasa a CANCELADA y sus solicitudes pendientes quedan RECHAZADAS
 router.delete('/:id', async (req, res) => {
-  const filas = await query(
-    `UPDATE publicaciones SET estado = 'CANCELADA' OUTPUT INSERTED.id WHERE id = @id`,
-    { id: Number(req.params.id) }
-  );
-  if (filas.length === 0) return res.status(404).json({ mensaje: 'Publicación no encontrada' });
+  await transaccion(async tx => {
+    const p = await buscarPropia(req.params.id, req.body?.usuarioId, tx);
+    await query(`UPDATE publicaciones SET estado = 'CANCELADA' WHERE id = @id`, { id: p.id }, tx);
+    await query(
+      `UPDATE solicitudes SET estado = 'RECHAZADA' WHERE publicacionId = @id AND estado = 'PENDIENTE'`,
+      { id: p.id }, tx
+    );
+  });
   res.status(204).end();
 });
 

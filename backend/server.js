@@ -18,6 +18,10 @@ app.use((req, res) => {
 
 // Manejo central de errores: Express 5 manda aquí los errores de las rutas async
 app.use((err, req, res, next) => {
+  // Errores de negocio lanzados con errorHttp (403, 404, 409...)
+  if (err.status) {
+    return res.status(err.status).json({ mensaje: err.message });
+  }
   // Errores de SQL Server que son culpa de los datos enviados
   if (err.number === 2627 || err.number === 2601) {
     return res.status(409).json({ mensaje: 'Ya existe un registro con esos datos' });

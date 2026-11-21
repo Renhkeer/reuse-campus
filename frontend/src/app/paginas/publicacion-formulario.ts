@@ -77,10 +77,10 @@ export class PublicacionFormulario implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    const datos = this.form.getRawValue();
+    const datos = { ...this.form.getRawValue(), usuarioId: this.sesion.usuario()?.id };
     const peticion = this.id
       ? this.api.editarPublicacion(this.id, datos)
-      : this.api.crearPublicacion({ ...datos, usuarioId: this.sesion.usuario()?.id });
+      : this.api.crearPublicacion(datos);
 
     peticion.subscribe({
       next: p => this.router.navigate(['/publicaciones', p.id]),

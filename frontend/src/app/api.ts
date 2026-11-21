@@ -27,8 +27,8 @@ export class Api {
   editarPublicacion(id: number, datos: Partial<Publicacion>) {
     return this.http.put<Publicacion>(`${URL}/publicaciones/${id}`, datos);
   }
-  cancelarPublicacion(id: number) {
-    return this.http.delete(`${URL}/publicaciones/${id}`);
+  cancelarPublicacion(id: number, usuarioId: number) {
+    return this.http.delete(`${URL}/publicaciones/${id}`, { body: { usuarioId } });
   }
 
   // Solicitudes
@@ -38,10 +38,22 @@ export class Api {
   crearSolicitud(datos: { publicacionId: number; solicitanteId: number; mensaje: string }) {
     return this.http.post<Solicitud>(`${URL}/solicitudes`, datos);
   }
+  aceptarSolicitud(id: number, usuarioId: number) {
+    return this.http.patch<Entrega>(`${URL}/solicitudes/${id}/aceptar`, { usuarioId });
+  }
+  rechazarSolicitud(id: number, usuarioId: number) {
+    return this.http.patch<Solicitud>(`${URL}/solicitudes/${id}/rechazar`, { usuarioId });
+  }
+  cancelarSolicitud(id: number, usuarioId: number) {
+    return this.http.patch<Solicitud>(`${URL}/solicitudes/${id}/cancelar`, { usuarioId });
+  }
 
   // Entregas
   getEntregas(usuarioId?: number) {
     return this.http.get<Entrega[]>(`${URL}/entregas`, { params: usuarioId ? { usuarioId } : {} });
+  }
+  completarEntrega(id: number, usuarioId: number) {
+    return this.http.patch<Entrega>(`${URL}/entregas/${id}/completar`, { usuarioId });
   }
 }
 

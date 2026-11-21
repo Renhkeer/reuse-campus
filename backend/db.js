@@ -13,10 +13,11 @@ const pool = new sql.ConnectionPool(config);
 const poolListo = pool.connect();
 
 // Ejecuta una consulta con parámetros: query('SELECT ... WHERE id = @id', { id: 5 })
-// Los parámetros evitan inyección SQL (nunca se concatena texto del usuario)
-async function query(texto, params = {}) {
+// Los parámetros evitan inyección SQL (nunca se concatena texto del usuario).
+// Si se pasa tx, la consulta corre dentro de esa transacción.
+async function query(texto, params = {}, tx = null) {
   await poolListo;
-  const request = pool.request();
+  const request = tx ? new sql.Request(tx) : pool.request();
   for (const nombre in params) {
     request.input(nombre, params[nombre]);
   }
@@ -24,4 +25,27 @@ async function query(texto, params = {}) {
   return resultado.recordset;
 }
 
-module.exports = { query, pool, poolListo, sql };
+// Ejecuta varias consultas como una sola operación: o se guardan todas o ninguna.
+// Uso: await transaccion(async tx => { await query('...', {...}, tx); ... });
+async function transaccion(pasos) {
+  await poolListo;
+  const tx = new sql.Transaction(pool);
+  await tx.begin();
+  try {
+    const resultado = await pasos(tx);
+    await tx.commit();
+    return resultado;
+  } catch (err) {
+    await tx.rollback();
+    throw err;
+  }
+}
+
+// Crea un error con código HTTP; el manejador de server.js lo responde
+function errorHttp(status, mensaje) {
+  const err = new Error(mensaje);
+  err.status = status;
+  return err;
+}
+
+module.exports = { query, transaccion, errorHttp, pool, poolListo, sql };
