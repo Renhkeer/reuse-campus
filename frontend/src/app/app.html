@@ -1,24 +1,24 @@
 <header class="barra">
   <a routerLink="/" class="logo">♻ ReUse Campus</a>
-  <nav>
-    <a routerLink="/">Publicaciones</a>
-    <a routerLink="/publicaciones/nueva">Publicar</a>
-    <a routerLink="/mis-solicitudes">Mis solicitudes</a>
-    <a routerLink="/entregas">Entregas</a>
-  </nav>
-  <label class="usuario">
-    Usuario:
-    <select (change)="cambiarUsuario($any($event.target).value)">
-      @for (u of usuarios(); track u.id) {
-        <option [value]="u.id">{{ u.nombre }}</option>
+
+  @if (sesion.usuario(); as u) {
+    <nav>
+      <a routerLink="/">Publicaciones</a>
+      <a routerLink="/publicaciones/nueva">Publicar</a>
+      <a routerLink="/mis-solicitudes">Mis solicitudes</a>
+      <a routerLink="/entregas">Entregas</a>
+      <!-- Solo el admin ve este link; la API igual rechaza a un usuario normal -->
+      @if (sesion.esAdmin()) {
+        <a routerLink="/usuarios">Usuarios</a>
       }
-    </select>
-  </label>
+    </nav>
+    <span class="usuario">
+      {{ u.nombre }} ({{ u.rol }})
+      <button class="secundario" (click)="salir()">Salir</button>
+    </span>
+  }
 </header>
 
 <main>
-  @if (error()) {
-    <p class="error">{{ error() }}</p>
-  }
   <router-outlet />
 </main>

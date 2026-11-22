@@ -2,7 +2,6 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Api, mensajeError } from '../api';
-import { Sesion } from '../sesion';
 
 // Sirve para crear (/publicaciones/nueva) y para editar (/publicaciones/:id/editar)
 @Component({
@@ -41,7 +40,6 @@ import { Sesion } from '../sesion';
 })
 export class PublicacionFormulario implements OnInit {
   private api = inject(Api);
-  private sesion = inject(Sesion);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
@@ -77,7 +75,7 @@ export class PublicacionFormulario implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    const datos = { ...this.form.getRawValue(), usuarioId: this.sesion.usuario()?.id };
+    const datos = this.form.getRawValue();
     const peticion = this.id
       ? this.api.editarPublicacion(this.id, datos)
       : this.api.crearPublicacion(datos);

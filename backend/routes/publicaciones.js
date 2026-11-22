@@ -38,38 +38,40 @@ router.get('/:id', async (req, res) => {
   res.json(filas[0]);
 });
 
-// POST /api/publicaciones  { titulo, descripcion, categoria, modalidad, usuarioId }
-// Etapa 2: usuarioId viene en el cuerpo; con el login saldrá del token (RN01)
+// POST /api/publicaciones  { titulo, descripcion, categoria, modalidad }
+// RN01 y RN02: el dueño es el usuario del token, no algo que mande el navegador
 router.post('/', async (req, res) => {
-  const error = validar(req.body) || (!req.body.usuarioId && 'El usuario propietario es obligatorio');
+  const error = validar(req.body);
   if (error) return res.status(400).json({ mensaje: error });
 
-  const { titulo, descripcion, categoria, modalidad, usuarioId } = req.body;
+  const { titulo, descripcion, categoria, modalidad } = req.body;
   const filas = await query(
     `INSERT INTO publicaciones (titulo, descripcion, categoria, modalidad, usuarioId)
      OUTPUT INSERTED.*
      VALUES (@titulo, @descripcion, @categoria, @modalidad, @usuarioId)`,
-    { titulo, descripcion, categoria, modalidad, usuarioId: Number(usuarioId) }
+    { titulo, descripcion, categoria, modalidad, usuarioId: req.usuario.id }
   );
   res.status(201).json(filas[0]);
 });
 
-// Revisa que la publicación exista, que sea del usuario y que siga DISPONIBLE
-async function buscarPropia(id, usuarioId, tx) {
+// Revisa que la publicación exista, que sea del usuario y que siga DISPONIBLE.
+// Con permitirAdmin = true el administrador también pasa (para moderar).
+async function buscarPropia(id, usuario, tx, permitirAdmin = false) {
   const filas = await query('SELECT * FROM publicaciones WHERE id = @id', { id: Number(id) }, tx);
   if (filas.length === 0) throw errorHttp(404, 'Publicación no encontrada');
   const p = filas[0];
-  if (p.usuarioId !== Number(usuarioId)) throw errorHttp(403, 'Solo el propietario puede modificar esta publicación');
+  const puede = p.usuarioId === usuario.id || (permitirAdmin && usuario.rol === 'ADMIN');
+  if (!puede) throw errorHttp(403, 'Solo el propietario puede modificar esta publicación');
   if (p.estado !== 'DISPONIBLE') throw errorHttp(409, `No se puede modificar: la publicación está ${p.estado}`);
   return p;
 }
 
-// PUT /api/publicaciones/:id  { titulo, descripcion, categoria, modalidad, usuarioId }
+// PUT /api/publicaciones/:id  { titulo, descripcion, categoria, modalidad }
 // El estado no se cambia aquí: lo cambian las reglas de negocio
 router.put('/:id', async (req, res) => {
   const error = validar(req.body);
   if (error) return res.status(400).json({ mensaje: error });
-  await buscarPropia(req.params.id, req.body.usuarioId);
+  await buscarPropia(req.params.id, req.usuario);
 
   const { titulo, descripcion, categoria, modalidad } = req.body;
   const filas = await query(
@@ -82,11 +84,11 @@ router.put('/:id', async (req, res) => {
   res.json(filas[0]);
 });
 
-// DELETE /api/publicaciones/:id  { usuarioId }
+// DELETE /api/publicaciones/:id  (el dueño o un admin)
 // No se borra (RN17): pasa a CANCELADA y sus solicitudes pendientes quedan RECHAZADAS
 router.delete('/:id', async (req, res) => {
   await transaccion(async tx => {
-    const p = await buscarPropia(req.params.id, req.body?.usuarioId, tx);
+    const p = await buscarPropia(req.params.id, req.usuario, tx, true);
     await query(`UPDATE publicaciones SET estado = 'CANCELADA' WHERE id = @id`, { id: p.id }, tx);
     await query(
       `UPDATE solicitudes SET estado = 'RECHAZADA' WHERE publicacionId = @id AND estado = 'PENDIENTE'`,

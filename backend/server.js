@@ -1,15 +1,18 @@
 const express = require('express');
 const cors = require('cors');
 const { poolListo } = require('./db');
+const { requiereLogin, soloAdmin } = require('./auth');
 
 const app = express();
 app.use(cors());           // permite que Angular (localhost:4200) llame a la API
 app.use(express.json());   // lee el cuerpo JSON de las peticiones
 
-app.use('/api/usuarios', require('./routes/usuarios'));
-app.use('/api/publicaciones', require('./routes/publicaciones'));
-app.use('/api/solicitudes', require('./routes/solicitudes'));
-app.use('/api/entregas', require('./routes/entregas'));
+// Todas las rutas piden login, menos el login mismo. Usuarios es solo para el admin.
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/usuarios', requiereLogin, soloAdmin, require('./routes/usuarios'));
+app.use('/api/publicaciones', requiereLogin, require('./routes/publicaciones'));
+app.use('/api/solicitudes', requiereLogin, require('./routes/solicitudes'));
+app.use('/api/entregas', requiereLogin, require('./routes/entregas'));
 
 // Ruta que no existe
 app.use((req, res) => {

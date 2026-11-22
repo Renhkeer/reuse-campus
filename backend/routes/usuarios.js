@@ -21,20 +21,21 @@ router.get('/:id', async (req, res) => {
   res.json(filas[0]);
 });
 
-// POST /api/usuarios  { nombre, correo, password }
+// POST /api/usuarios  { nombre, correo, password, rol }
 router.post('/', async (req, res) => {
-  const { nombre, correo, password } = req.body;
+  const { nombre, correo, password, rol = 'USUARIO' } = req.body;
   if (!nombre || !correo || !password) {
     return res.status(400).json({ mensaje: 'Nombre, correo y contraseña son obligatorios' });
   }
+  if (!['USUARIO', 'ADMIN'].includes(rol)) return res.status(400).json({ mensaje: 'El rol debe ser USUARIO o ADMIN' });
   if (!correo.includes('@')) return res.status(400).json({ mensaje: 'El correo no es válido' });
   if (password.length < 6) return res.status(400).json({ mensaje: 'La contraseña debe tener al menos 6 caracteres' });
 
   const hash = await bcrypt.hash(password, 10);
   const filas = await query(
-    `INSERT INTO usuarios (nombre, correo, password) OUTPUT ${CAMPOS_INSERTED}
-     VALUES (@nombre, @correo, @hash)`,
-    { nombre, correo, hash }
+    `INSERT INTO usuarios (nombre, correo, password, rol) OUTPUT ${CAMPOS_INSERTED}
+     VALUES (@nombre, @correo, @hash, @rol)`,
+    { nombre, correo, hash, rol }
   );
   res.status(201).json(filas[0]);
 });
@@ -55,12 +56,25 @@ router.put('/:id', async (req, res) => {
 
 // DELETE /api/usuarios/:id -> no se borra (RN17), queda INACTIVO
 router.delete('/:id', async (req, res) => {
+  if (Number(req.params.id) === req.usuario.id) {
+    return res.status(409).json({ mensaje: 'No puedes desactivar tu propia cuenta' });
+  }
   const filas = await query(
     `UPDATE usuarios SET estado = 'INACTIVO' OUTPUT INSERTED.id WHERE id = @id`,
     { id: Number(req.params.id) }
   );
   if (filas.length === 0) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
   res.status(204).end();
+});
+
+// PATCH /api/usuarios/:id/activar -> vuelve a ACTIVO
+router.patch('/:id/activar', async (req, res) => {
+  const filas = await query(
+    `UPDATE usuarios SET estado = 'ACTIVO' OUTPUT ${CAMPOS_INSERTED} WHERE id = @id`,
+    { id: Number(req.params.id) }
+  );
+  if (filas.length === 0) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+  res.json(filas[0]);
 });
 
 module.exports = router;

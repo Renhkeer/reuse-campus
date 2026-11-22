@@ -22,11 +22,15 @@ import { Publicacion, Solicitud } from '../models';
         <p>{{ p.descripcion }}</p>
         <small>Publicado por {{ p.propietario }} el {{ p.fechaPublicacion | date: 'dd/MM/yyyy HH:mm' }}</small>
 
-        <!-- Solo el dueño ve estos botones, y solo si sigue DISPONIBLE (el backend lo valida igual) -->
-        @if (esDueno() && p.estado === 'DISPONIBLE') {
+        <!-- Solo el dueño edita; el dueño o el admin cancelan. El backend lo valida igual (RN18) -->
+        @if (p.estado === 'DISPONIBLE') {
           <p>
-            <a class="boton" [routerLink]="['/publicaciones', p.id, 'editar']">Editar</a>
-            <button class="peligro" (click)="cancelarPublicacion()">Cancelar publicación</button>
+            @if (esDueno()) {
+              <a class="boton" [routerLink]="['/publicaciones', p.id, 'editar']">Editar</a>
+            }
+            @if (esDueno() || sesion.esAdmin()) {
+              <button class="peligro" (click)="cancelarPublicacion()">Cancelar publicación</button>
+            }
           </p>
         }
       </div>
@@ -64,7 +68,7 @@ import { Publicacion, Solicitud } from '../models';
 })
 export class PublicacionDetalle implements OnInit {
   private api = inject(Api);
-  private sesion = inject(Sesion);
+  sesion = inject(Sesion);
   private router = inject(Router);
   private id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
 
@@ -106,29 +110,25 @@ export class PublicacionDetalle implements OnInit {
     });
   }
 
-  private usuarioId() {
-    return this.sesion.usuario()!.id;
-  }
-
   solicitar() {
-    const datos = { publicacionId: this.id, solicitanteId: this.usuarioId(), mensaje: this.nuevoMensaje };
+    const datos = { publicacionId: this.id, mensaje: this.nuevoMensaje };
     this.ejecutar(this.api.crearSolicitud(datos), 'Solicitud enviada');
     this.nuevoMensaje = '';
   }
 
   aceptar(s: Solicitud) {
     if (!confirm(`¿Aceptar la solicitud de ${s.solicitante}? Las demás pendientes se rechazarán.`)) return;
-    this.ejecutar(this.api.aceptarSolicitud(s.id, this.usuarioId()),
+    this.ejecutar(this.api.aceptarSolicitud(s.id),
       'Solicitud aceptada: la publicación quedó RESERVADA y se creó la entrega');
   }
 
   rechazar(s: Solicitud) {
-    this.ejecutar(this.api.rechazarSolicitud(s.id, this.usuarioId()), 'Solicitud rechazada');
+    this.ejecutar(this.api.rechazarSolicitud(s.id), 'Solicitud rechazada');
   }
 
   cancelarPublicacion() {
     if (!confirm('¿Cancelar esta publicación?')) return;
-    this.api.cancelarPublicacion(this.id, this.usuarioId()).subscribe({
+    this.api.cancelarPublicacion(this.id).subscribe({
       next: () => this.router.navigate(['/']),
       error: err => this.error.set(mensajeError(err))
     });

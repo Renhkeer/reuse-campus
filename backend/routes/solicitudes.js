@@ -44,11 +44,12 @@ router.get('/:id', async (req, res) => {
   res.json(filas[0]);
 });
 
-// POST /api/solicitudes  { publicacionId, solicitanteId, mensaje }
+// POST /api/solicitudes  { publicacionId, mensaje }  (el solicitante es el usuario del token)
 router.post('/', async (req, res) => {
-  const { publicacionId, solicitanteId, mensaje } = req.body;
-  if (!publicacionId || !solicitanteId || !mensaje || !mensaje.trim()) {
-    return res.status(400).json({ mensaje: 'Publicación, solicitante y mensaje son obligatorios' });
+  const { publicacionId, mensaje } = req.body;
+  const solicitanteId = req.usuario.id;
+  if (!publicacionId || !mensaje || !mensaje.trim()) {
+    return res.status(400).json({ mensaje: 'Publicación y mensaje son obligatorios' });
   }
 
   const pubs = await query('SELECT usuarioId, estado FROM publicaciones WHERE id = @id', { id: Number(publicacionId) });
@@ -56,7 +57,7 @@ router.post('/', async (req, res) => {
   const publicacion = pubs[0];
 
   // RN03: el dueño no puede pedir su propia publicación
-  if (publicacion.usuarioId === Number(solicitanteId)) {
+  if (publicacion.usuarioId === solicitanteId) {
     return res.status(403).json({ mensaje: 'No puedes solicitar tu propia publicación' });
   }
   // RN04, RN12 y RN15: solo se solicita lo que está DISPONIBLE
@@ -68,7 +69,7 @@ router.post('/', async (req, res) => {
   const pendientes = await query(
     `SELECT id FROM solicitudes
      WHERE publicacionId = @publicacionId AND solicitanteId = @solicitanteId AND estado = 'PENDIENTE'`,
-    { publicacionId: Number(publicacionId), solicitanteId: Number(solicitanteId) }
+    { publicacionId: Number(publicacionId), solicitanteId }
   );
   if (pendientes.length > 0) {
     return res.status(409).json({ mensaje: 'Ya tienes una solicitud pendiente para esta publicación' });
@@ -78,15 +79,15 @@ router.post('/', async (req, res) => {
     `INSERT INTO solicitudes (publicacionId, solicitanteId, mensaje)
      OUTPUT INSERTED.*
      VALUES (@publicacionId, @solicitanteId, @mensaje)`,
-    { publicacionId: Number(publicacionId), solicitanteId: Number(solicitanteId), mensaje: mensaje.trim() }
+    { publicacionId: Number(publicacionId), solicitanteId, mensaje: mensaje.trim() }
   );
   res.status(201).json(filas[0]);
 });
 
-// PATCH /api/solicitudes/:id/aceptar  { usuarioId }
+// PATCH /api/solicitudes/:id/aceptar
 // RN07 a RN11: todo en una transacción para que no quede a medias
 router.patch('/:id/aceptar', async (req, res) => {
-  const usuarioId = Number(req.body.usuarioId);
+  const usuarioId = req.usuario.id;
 
   const entrega = await transaccion(async tx => {
     const s = await buscarSolicitud(req.params.id, tx);
@@ -126,11 +127,11 @@ router.patch('/:id/aceptar', async (req, res) => {
   res.json(entrega);
 });
 
-// PATCH /api/solicitudes/:id/rechazar  { usuarioId }
+// PATCH /api/solicitudes/:id/rechazar
 router.patch('/:id/rechazar', async (req, res) => {
   const s = await buscarSolicitud(req.params.id);
   // RN07: solo el dueño de la publicación decide
-  if (s.propietarioId !== Number(req.body.usuarioId)) {
+  if (s.propietarioId !== req.usuario.id) {
     return res.status(403).json({ mensaje: 'Solo el propietario puede rechazar solicitudes' });
   }
   if (s.estado !== 'PENDIENTE') return res.status(409).json({ mensaje: `La solicitud ya está ${s.estado}` });
@@ -139,10 +140,10 @@ router.patch('/:id/rechazar', async (req, res) => {
   res.json({ ...s, estado: 'RECHAZADA' });
 });
 
-// PATCH /api/solicitudes/:id/cancelar  { usuarioId }
+// PATCH /api/solicitudes/:id/cancelar
 router.patch('/:id/cancelar', async (req, res) => {
   const s = await buscarSolicitud(req.params.id);
-  if (s.solicitanteId !== Number(req.body.usuarioId)) {
+  if (s.solicitanteId !== req.usuario.id) {
     return res.status(403).json({ mensaje: 'Solo quien hizo la solicitud puede cancelarla' });
   }
   // RN16: solo mientras esté PENDIENTE

@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Api, mensajeError } from '../api';
@@ -9,7 +9,7 @@ import { Entrega } from '../models';
   selector: 'app-entregas',
   imports: [DatePipe, RouterLink],
   template: `
-    <h1>Mis entregas</h1>
+    <h1>{{ sesion.esAdmin() ? 'Todas las entregas' : 'Mis entregas' }}</h1>
     @if (error()) { <p class="error">{{ error() }}</p> }
     @if (mensaje()) { <p class="exito">{{ mensaje() }}</p> }
 
@@ -32,22 +32,20 @@ import { Entrega } from '../models';
     }
   `
 })
-export class Entregas {
+export class Entregas implements OnInit {
   private api = inject(Api);
   sesion = inject(Sesion);
   entregas = signal<Entrega[]>([]);
   error = signal('');
   mensaje = signal('');
 
-  constructor() {
-    // Se vuelve a cargar cada vez que cambia el usuario
-    effect(() => this.cargar());
+  ngOnInit() {
+    this.cargar();
   }
 
+  // La API devuelve solo las entregas del usuario (o todas si es admin)
   cargar() {
-    const usuario = this.sesion.usuario();
-    if (!usuario) return;
-    this.api.getEntregas(usuario.id).subscribe({
+    this.api.getEntregas().subscribe({
       next: lista => this.entregas.set(lista),
       error: err => this.error.set(mensajeError(err))
     });
@@ -56,7 +54,7 @@ export class Entregas {
   completar(e: Entrega) {
     if (!confirm('¿Confirmas que el artículo ya fue entregado?')) return;
     this.error.set('');
-    this.api.completarEntrega(e.id, this.sesion.usuario()!.id).subscribe({
+    this.api.completarEntrega(e.id).subscribe({
       next: () => {
         this.mensaje.set('Entrega completada: la publicación quedó ENTREGADA');
         this.cargar();

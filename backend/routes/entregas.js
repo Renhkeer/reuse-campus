@@ -11,13 +11,15 @@ const SELECT = `
   JOIN usuarios pr ON pr.id = e.propietarioId
   JOIN usuarios r ON r.id = e.receptorId`;
 
-// GET /api/entregas?usuarioId=2  (entregas donde participa como propietario o receptor)
+// GET /api/entregas
+// Un usuario ve solo las entregas donde participa; el admin las ve todas
 router.get('/', async (req, res) => {
+  const usuarioId = req.usuario.rol === 'ADMIN' ? null : req.usuario.id;
   const filas = await query(
     `${SELECT}
      WHERE @usuarioId IS NULL OR e.propietarioId = @usuarioId OR e.receptorId = @usuarioId
      ORDER BY e.fechaAcuerdo DESC`,
-    { usuarioId: req.query.usuarioId ? Number(req.query.usuarioId) : null }
+    { usuarioId }
   );
   res.json(filas);
 });
@@ -29,7 +31,7 @@ router.get('/:id', async (req, res) => {
   res.json(filas[0]);
 });
 
-// PATCH /api/entregas/:id/completar  { usuarioId }
+// PATCH /api/entregas/:id/completar
 // RN14: la entrega pasa a COMPLETADA y la publicación a ENTREGADA, juntas
 router.patch('/:id/completar', async (req, res) => {
   const entrega = await transaccion(async tx => {
@@ -38,7 +40,7 @@ router.patch('/:id/completar', async (req, res) => {
     const e = filas[0];
 
     // El propietario confirma que entregó el artículo
-    if (e.propietarioId !== Number(req.body.usuarioId)) {
+    if (e.propietarioId !== req.usuario.id) {
       throw errorHttp(403, 'Solo el propietario puede confirmar la entrega');
     }
     if (e.estado !== 'PENDIENTE') throw errorHttp(409, 'La entrega ya fue completada');

@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Api, mensajeError } from '../api';
@@ -28,21 +28,18 @@ import { Solicitud } from '../models';
     }
   `
 })
-export class MisSolicitudes {
+export class MisSolicitudes implements OnInit {
   private api = inject(Api);
   private sesion = inject(Sesion);
   solicitudes = signal<Solicitud[]>([]);
   error = signal('');
 
-  constructor() {
-    // Se vuelve a cargar cada vez que cambia el usuario
-    effect(() => this.cargar());
+  ngOnInit() {
+    this.cargar();
   }
 
   cargar() {
-    const usuario = this.sesion.usuario();
-    if (!usuario) return;
-    this.api.getSolicitudes({ solicitanteId: usuario.id }).subscribe({
+    this.api.getSolicitudes({ solicitanteId: this.sesion.usuario()!.id }).subscribe({
       next: lista => this.solicitudes.set(lista),
       error: err => this.error.set(mensajeError(err))
     });
@@ -50,7 +47,7 @@ export class MisSolicitudes {
 
   cancelar(s: Solicitud) {
     this.error.set('');
-    this.api.cancelarSolicitud(s.id, this.sesion.usuario()!.id).subscribe({
+    this.api.cancelarSolicitud(s.id).subscribe({
       next: () => this.cargar(),
       error: err => this.error.set(mensajeError(err))
     });
