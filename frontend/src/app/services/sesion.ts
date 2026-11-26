@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { Usuario } from './models';
+import { Usuario } from '../models/usuario';
 
 // Guarda quién inició sesión. Se guarda en localStorage para que siga
 // conectado al recargar la página.

@@ -1,42 +1,14 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Api, mensajeError } from '../api';
+import { Api, mensajeError } from '../../services/api';
 
 // Sirve para crear (/publicaciones/nueva) y para editar (/publicaciones/:id/editar)
 @Component({
   selector: 'app-publicacion-formulario',
   imports: [ReactiveFormsModule],
-  template: `
-    <h1>{{ id ? 'Editar publicación' : 'Nueva publicación' }}</h1>
-
-    <form class="tarjeta" [formGroup]="form" (ngSubmit)="guardar()">
-      <label>Título</label>
-      <input formControlName="titulo" maxlength="100" />
-      @if (invalido('titulo')) { <p class="campo-error">El título es obligatorio</p> }
-
-      <label>Descripción</label>
-      <textarea formControlName="descripcion" rows="4" maxlength="500"></textarea>
-      @if (invalido('descripcion')) { <p class="campo-error">La descripción es obligatoria</p> }
-
-      <label>Categoría</label>
-      <select formControlName="categoria">
-        <option value="">-- Elige --</option>
-        @for (c of categorias; track c) { <option [value]="c">{{ c }}</option> }
-      </select>
-      @if (invalido('categoria')) { <p class="campo-error">Elige una categoría</p> }
-
-      <label>Modalidad</label>
-      <select formControlName="modalidad">
-        <option value="DONACION">Donación</option>
-        <option value="INTERCAMBIO">Intercambio</option>
-      </select>
-
-      @if (error()) { <p class="error">{{ error() }}</p> }
-
-      <button type="submit">Guardar</button>
-    </form>
-  `
+  templateUrl: './publicacion-formulario.html',
+  styleUrl: './publicacion-formulario.css'
 })
 export class PublicacionFormulario implements OnInit {
   private api = inject(Api);

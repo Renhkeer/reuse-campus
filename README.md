@@ -73,11 +73,14 @@ backend/
   routes/                    una ruta por recurso: auth, usuarios, publicaciones, solicitudes, entregas
   pruebas/reglas.test.js     pruebas del flujo, las reglas de negocio y los errores
 frontend/src/app/
-  api.ts                     servicio con todas las llamadas HttpClient y mensajeError()
-  sesion.ts                  usuario y token de la sesión (localStorage)
-  auth.ts                    interceptor que agrega el token y guards de login y admin
-  models.ts                  interfaces de las 4 entidades
-  paginas/                   login, publicaciones (lista, detalle, formulario), mis solicitudes, entregas, usuarios
+  components/<vista>/        un componente por vista: <vista>.ts (lógica), .html (vista) y .css (diseño)
+                             cabecera, menu, login, publicaciones-lista, publicacion-detalle,
+                             publicacion-formulario, mis-solicitudes, entregas, usuarios
+  services/api.ts            servicio con todas las llamadas HttpClient y mensajeError()
+  services/sesion.ts         usuario y token de la sesión (localStorage)
+  guards/auth.ts             guards de login y de admin
+  interceptors/token.ts      agrega el token a cada petición y vuelve al login si expira
+  models/                    una interfaz por entidad: usuario, publicacion, solicitud, entrega
 ```
 
 Flujo de una operación: componente Angular → `Api` (HttpClient + token) → ruta Express → `requiereLogin` → validación y regla de negocio → SQL Server (transacción si cambia varias tablas) → respuesta JSON con código HTTP → la página muestra el resultado o el mensaje de error y recarga los datos.

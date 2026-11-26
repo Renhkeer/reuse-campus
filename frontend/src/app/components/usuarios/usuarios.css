@@ -1,0 +1,4 @@
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 6px; border-bottom: 1px solid #eee; }
+.estado.ACTIVO { background: #c8e6c9; }
+.estado.INACTIVO { background: #ffcdd2; }

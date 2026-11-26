@@ -1,0 +1,17 @@
+<h1>Mis solicitudes</h1>
+@if (error()) { <p class="error">{{ error() }}</p> }
+
+@for (s of solicitudes(); track s.id) {
+  <div class="tarjeta">
+    <a [routerLink]="['/publicaciones', s.publicacionId]"><strong>{{ s.publicacion }}</strong></a>
+    <span class="estado" [class]="s.estado">{{ s.estado }}</span>
+    <p>{{ s.mensaje }}</p>
+    <small>{{ s.fechaSolicitud | date: 'dd/MM/yyyy HH:mm' }}</small>
+    <!-- RN16: solo se puede cancelar mientras está PENDIENTE -->
+    @if (s.estado === 'PENDIENTE') {
+      <p><button class="peligro" (click)="cancelar(s)">Cancelar solicitud</button></p>
+    }
+  </div>
+} @empty {
+  <p>No has hecho solicitudes.</p>
+}

@@ -1,11 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Entrega, Publicacion, Solicitud, Usuario } from './models';
+import { Usuario } from '../models/usuario';
+import { Publicacion } from '../models/publicacion';
+import { Solicitud } from '../models/solicitud';
+import { Entrega } from '../models/entrega';
 
 const URL = 'http://localhost:3000/api';
 
 // Todas las llamadas a la API Express pasan por este servicio.
-// El token lo agrega tokenInterceptor (auth.ts); el usuario lo saca la API del token.
+// El token lo agrega tokenInterceptor (interceptors/token.ts); el usuario lo saca la API del token.
 @Injectable({ providedIn: 'root' })
 export class Api {
   private http = inject(HttpClient);

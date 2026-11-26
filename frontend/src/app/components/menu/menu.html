@@ -1,0 +1,10 @@
+<nav>
+  <a routerLink="/">Publicaciones</a>
+  <a routerLink="/publicaciones/nueva">Publicar</a>
+  <a routerLink="/mis-solicitudes">Mis solicitudes</a>
+  <a routerLink="/entregas">Entregas</a>
+  <!-- Solo el admin ve este link; la API igual rechaza a un usuario normal -->
+  @if (sesion.esAdmin()) {
+    <a routerLink="/usuarios">Usuarios</a>
+  }
+</nav>

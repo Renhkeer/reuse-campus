@@ -1,19 +1,11 @@
-import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
-import { Sesion } from './sesion';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { Cabecera } from './components/cabecera/cabecera';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, Cabecera],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
-  private router = inject(Router);
-  sesion = inject(Sesion);
-
-  salir() {
-    this.sesion.cerrar();
-    this.router.navigate(['/login']);
-  }
-}
+export class App {}

@@ -1,0 +1,11 @@
+<header class="barra">
+  <a routerLink="/" class="logo">♻ ReUse Campus</a>
+
+  @if (sesion.usuario(); as u) {
+    <app-menu />
+    <span class="usuario">
+      {{ u.nombre }} ({{ u.rol }})
+      <button class="secundario" (click)="salir()">Salir</button>
+    </span>
+  }
+</header>

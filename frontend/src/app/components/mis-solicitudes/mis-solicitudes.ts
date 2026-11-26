@@ -1,32 +1,15 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Api, mensajeError } from '../api';
-import { Sesion } from '../sesion';
-import { Solicitud } from '../models';
+import { Api, mensajeError } from '../../services/api';
+import { Sesion } from '../../services/sesion';
+import { Solicitud } from '../../models/solicitud';
 
 @Component({
   selector: 'app-mis-solicitudes',
   imports: [DatePipe, RouterLink],
-  template: `
-    <h1>Mis solicitudes</h1>
-    @if (error()) { <p class="error">{{ error() }}</p> }
-
-    @for (s of solicitudes(); track s.id) {
-      <div class="tarjeta">
-        <a [routerLink]="['/publicaciones', s.publicacionId]"><strong>{{ s.publicacion }}</strong></a>
-        <span class="estado" [class]="s.estado">{{ s.estado }}</span>
-        <p>{{ s.mensaje }}</p>
-        <small>{{ s.fechaSolicitud | date: 'dd/MM/yyyy HH:mm' }}</small>
-        <!-- RN16: solo se puede cancelar mientras está PENDIENTE -->
-        @if (s.estado === 'PENDIENTE') {
-          <p><button class="peligro" (click)="cancelar(s)">Cancelar solicitud</button></p>
-        }
-      </div>
-    } @empty {
-      <p>No has hecho solicitudes.</p>
-    }
-  `
+  templateUrl: './mis-solicitudes.html',
+  styleUrl: './mis-solicitudes.css'
 })
 export class MisSolicitudes implements OnInit {
   private api = inject(Api);

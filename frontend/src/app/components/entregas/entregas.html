@@ -1,0 +1,21 @@
+<h1>{{ sesion.esAdmin() ? 'Todas las entregas' : 'Mis entregas' }}</h1>
+@if (error()) { <p class="error">{{ error() }}</p> }
+@if (mensaje()) { <p class="exito">{{ mensaje() }}</p> }
+
+@for (e of entregas(); track e.id) {
+  <div class="tarjeta">
+    <a [routerLink]="['/publicaciones', e.publicacionId]"><strong>{{ e.publicacion }}</strong></a>
+    <span class="estado" [class]="e.estado">{{ e.estado }}</span>
+    <p>De <b>{{ e.propietario }}</b> para <b>{{ e.receptor }}</b></p>
+    <small>
+      Acordada el {{ e.fechaAcuerdo | date: 'dd/MM/yyyy HH:mm' }}
+      @if (e.fechaEntrega) { · entregada el {{ e.fechaEntrega | date: 'dd/MM/yyyy HH:mm' }} }
+    </small>
+    <!-- El propietario confirma cuando ya entregó el artículo (RN14) -->
+    @if (e.estado === 'PENDIENTE' && e.propietarioId === sesion.usuario()?.id) {
+      <p><button (click)="completar(e)">Confirmar entrega</button></p>
+    }
+  </div>
+} @empty {
+  <p>No tienes entregas.</p>
+}

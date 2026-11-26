@@ -1,0 +1,20 @@
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  background: #2e7d32;
+  color: white;
+}
+
+.logo {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.usuario {
+  margin-left: auto;
+}

@@ -1,12 +1,12 @@
 import { Routes } from '@angular/router';
-import { requiereLogin, soloAdmin } from './auth';
-import { Login } from './paginas/login';
-import { PublicacionesLista } from './paginas/publicaciones-lista';
-import { PublicacionDetalle } from './paginas/publicacion-detalle';
-import { PublicacionFormulario } from './paginas/publicacion-formulario';
-import { MisSolicitudes } from './paginas/mis-solicitudes';
-import { Entregas } from './paginas/entregas';
-import { Usuarios } from './paginas/usuarios';
+import { requiereLogin, soloAdmin } from './guards/auth';
+import { Login } from './components/login/login';
+import { PublicacionesLista } from './components/publicaciones-lista/publicaciones-lista';
+import { PublicacionDetalle } from './components/publicacion-detalle/publicacion-detalle';
+import { PublicacionFormulario } from './components/publicacion-formulario/publicacion-formulario';
+import { MisSolicitudes } from './components/mis-solicitudes/mis-solicitudes';
+import { Entregas } from './components/entregas/entregas';
+import { Usuarios } from './components/usuarios/usuarios';
 
 export const routes: Routes = [
   { path: 'login', component: Login },
